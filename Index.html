@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tetr | Event Downstream Dashboard</title>
+
+<style>
+:root {
+  --ink:#172033;
+  --muted:#718096;
+  --line:#e6ebf2;
+  --bg:#f5f7fb;
+  --green:#16734a;
+  --nav:#111c2e;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+button,input,select { font:inherit; }
+.sidebar {
+  position:fixed;
+  inset:0 auto 0 0;
+  width:230px;
+  background:var(--nav);
+  color:#aab7ca;
+  padding:24px 15px;
+  display:flex;
+  flex-direction:column;
+}
+.brand {
+  display:flex;
+  gap:11px;
+  align-items:center;
+  padding:0 9px 30px;
+  color:white;
+  font-weight:800;
+  font-size:20px;
+}
+.brandmark {
+  background:#4ade80;
+  color:#10251a;
+  border-radius:10px;
+  padding:8px;
+}
+.sub {
+  font-size:10px;
+  letter-spacing:1.5px;
+  color:#718096;
+  font-weight:700;
+  padding:12px;
+}
+.nav {
+  padding:11px 12px;
+  border-radius:9px;
+  margin:2px 0;
+  font-size:13px;
+  cursor:pointer;
+}
+.nav:hover,.nav.active {
+  background:#234a3b;
+  color:#baf7cf;
+}
+.sidebar-note {
+  margin-top:auto;
+  border:1px solid #304057;
+  border-radius:12px;
+  padding:13px;
+  font-size:11px;
+  line-height:1.6;
+}
+.main { margin-left:230px; }
+.topbar {
+  background:white;
+  border-bottom:1px solid var(--line);
+  padding:22px 30px;
+  display:flex;
+  justify-content:space-between;
+  gap:15px;
+  align-items:center;
+}
+.eyebrow,.subtitle { font-size:12px; color:var(--muted); }
+h1 { font-size:24px; margin:5px 0 6px; }
+.actions { display:flex; gap:8px; flex-wrap:wrap; }
+.btn {
+  border:1px solid var(--line);
+  background:white;
+  border-radius:9px;
+  padding:10px 13px;
+  font-size:12px;
+  font-weight:650;
+  cursor:pointer;
+}
+.btn.primary {
+  background:var(--green);
+  border-color:var(--green);
+  color:white;
+}
+.content {
+  padding:24px 30px 35px;
+  max-width:1600px;
+  margin:auto;
+}
+.meta {
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:18px;
+  color:var(--muted);
+  font-size:12px;
+}
+.status { display:flex; align-items:center; gap:7px; }
+.dot {
+  width:8px;height:8px;
+  background:#f59e0b;
+  border-radius:50%;
+}
+.kpis {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:14px;
+}
+.card {
+  background:white;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:19px;
+  box-shadow:0 2px 8px #14223705;
+  min-width:0;
+}
+.kpi-title { font-size:12px; color:var(--muted); }
+.kpi-num {
+  font-size:29px;
+  font-weight:780;
+  margin:12px 0 5px;
+}
+.kpi-note { font-size:11px; color:var(--muted); }
+.kpi-icon {
+  float:right;
+  background:#eef5ff;
+  color:#3567b7;
+  border-radius:10px;
+  padding:9px;
+}
+.layout {
+  display:grid;
+  grid-template-columns:1.4fr 1fr;
+  gap:16px;
+  margin-top:16px;
+}
+.card h2 { font-size:15px; margin:0 0 5px; }
+.desc { font-size:11px; color:var(--muted); margin-bottom:21px; }
+.pill {
+  background:#f1f4f8;
+  border-radius:7px;
+  padding:6px 8px;
+  font-size:10px;
+  color:#637084;
+  font-weight:700;
+}
+.headrow {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+}
+.stage {
+  display:grid;
+  grid-template-columns:150px 1fr 30px;
+  gap:10px;
+  align-items:center;
+  margin:14px 0;
+}
+.stage-name {
+  font-size:11px;
+  color:#536176;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.track {
+  height:9px;
+  border-radius:30px;
+  background:#edf1f5;
+  overflow:hidden;
+}
+.bar { height:100%; border-radius:30px; }
+.stage-count { text-align:right; font-size:11px; font-weight:750; }
+.footnote {
+  border-top:1px solid #edf0f4;
+  margin-top:18px;
+  padding-top:13px;
+  font-size:10px;
+  color:var(--muted);
+  display:flex;
+  gap:15px;
+  flex-wrap:wrap;
+}
+.eventbar { margin:17px 0; }
+.eventlabel {
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  font-size:11px;
+  margin-bottom:7px;
+}
+.eventlabel span:first-child {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  max-width:85%;
+}
+.highlight {
+  margin-top:19px;
+  background:#eaf8ef;
+  border-radius:10px;
+  padding:12px;
+  font-size:11px;
+  color:#17633e;
+  line-height:1.6;
+}
+.section { margin-top:16px; }
+.tools { display:flex; gap:9px; margin:17px 0 12px; }
+.tools input,.tools select {
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:10px 12px;
+  background:white;
+  font-size:12px;
+  min-width:0;
+}
+.tools input { flex:1; }
+.table-wrap { overflow:auto; }
+table {
+  width:100%;
+  border-collapse:collapse;
+  min-width:900px;
+  text-align:left;
+}
+th {
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  color:#7b8798;
+  padding:12px 10px;
+  border-bottom:1px solid var(--line);
+  white-space:nowrap;
+}
+td {
+  font-size:11px;
+  padding:13px 10px;
+  border-bottom:1px solid #edf0f4;
+  white-space:nowrap;
+}
+td.name {
+  white-space:normal;
+  min-width:210px;
+  max-width:250px;
+  font-weight:650;
+}
+tbody tr:hover { background:#f8fafc; }
+.bottomgrid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  margin-top:16px;
+}
+.region { margin:18px 0; }
+.region-label {
+  display:flex;
+  justify-content:space-between;
+  font-size:11px;
+  margin-bottom:8px;
+}
+.source {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  border:1px solid #edf0f4;
+  padding:12px;
+  border-radius:10px;
+  margin-top:9px;
+}
+.source-name { font-size:12px; font-weight:700; }
+.source-desc { font-size:10px; color:var(--muted); margin-top:4px; }
+.source-status {
+  font-size:10px;
+  padding:5px 7px;
+  border-radius:6px;
+  background:#f1f4f8;
+  white-space:nowrap;
+}
+.footer {
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+  color:#9aa4b2;
+  font-size:10px;
+  padding:22px 0;
+}
+@media(max-width:1100px) {
+  .sidebar { width:190px; }
+  .main { margin-left:190px; }
+  .content { padding:20px; }
+  .topbar { padding:20px; }
+  .kpis { grid-template-columns:repeat(2,1fr); }
+  .layout { grid-template-columns:1fr; }
+}
+@media(max-width:700px) {
+  .sidebar {
+    position:static;
+    width:auto;
+    display:block;
+    padding:12px;
+  }
+  .brand { padding:0 8px 10px; }
+  .sidebar .sub,.sidebar-note { display:none; }
+  .sidebar nav { display:flex; overflow:auto; }
+  .nav { white-space:nowrap; padding:9px; }
+  .main { margin-left:0; }
+  .topbar {
+    padding:18px;
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .content { padding:14px; }
+  .kpis { gap:9px; }
+  .card { padding:14px; }
+  .kpi-num { font-size:24px; }
+  .bottomgrid { grid-template-columns:1fr; }
+  .stage { grid-template-columns:115px 1fr 24px; }
+  .tools { flex-direction:column; }
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+<aside class="sidebar">
+  <div class="brand">
+    <span class="brandmark">✦</span>
+    <span>tetr<span style="color:#4ade80">.</span>
+      <div style="font-size:9px;letter-spacing:1.5px;color:#8391a7;font-weight:600;margin-top:3px">EVENT INTELLIGENCE</div>
+    </span>
+  </div>
+
+  <div class="sub">WORKSPACE</div>
+  <nav>
+    <div class="nav active" onclick="setNav(this)">▦ &nbsp; Overview</div>
+    <div class="nav" onclick="setNav(this)">▤ &nbsp; Event performance</div>
+    <div class="nav" onclick="setNav(this)">♙ &nbsp; Attendee journeys</div>
+    <div class="nav" onclick="setNav(this)">⇄ &nbsp; Downstream funnel</div>
+  </nav>
+
+  <div class="sub" style="margin-top:20px">MANAGE</div>
+  <div class="nav" onclick="setNav(this)">◉ &nbsp; Data sources</div>
+  <div class="nav" onclick="setNav(this)">⚙ &nbsp; Settings</div>
+
+  <div class="sidebar-note">
+    <b style="color:white">Data connection</b><br>
+    Demo snapshot is currently active. Connect Google Sheets to display live data.
+  </div>
+</aside>
+
+<main class="main">
+<header class="topbar">
+  <div>
+    <div class="eyebrow">Analytics / Overview</div>
+    <h1>Event downstream dashboard</h1>
+    <div class="subtitle">From event invite to attendee quality and admissions outcome</div>
+  </div>
+  <div class="actions">
+    <button class="btn" onclick="refreshData()">↻ Refresh</button>
+    <button class="btn primary" onclick="exportCSV()">↓ Export CSV</button>
+  </div>
+</header>
+
+<div class="content">
+  <div class="meta">
+    <div>▦ &nbsp; Reporting period: <b style="color:#354154">29 Aug – 06 Oct 2026</b> &nbsp; <span class="pill">9 EVENTS</span></div>
+    <div class="status"><span class="dot" id="statusDot"></span><span id="statusText">Demo snapshot · not live</span></div>
+  </div>
+
+  <section class="kpis">
+    <div class="card">
+      <span class="kpi-icon">♙</span>
+      <div class="kpi-title">Candidates invited</div>
+      <div class="kpi-num" id="invited">74,758</div>
+      <div class="kpi-note">Across all event campaigns</div>
+    </div>
+    <div class="card">
+      <span class="kpi-icon" style="background:#f3edff;color:#7950c5">✓</span>
+      <div class="kpi-title">Registered</div>
+      <div class="kpi-num" id="registered">231</div>
+      <div class="kpi-note" id="regRate">0.31% invite-to-registration</div>
+    </div>
+    <div class="card">
+      <span class="kpi-icon" style="background:#e8faff;color:#087e9d">◉</span>
+      <div class="kpi-title">Attendees</div>
+      <div class="kpi-num" id="attendees">71</div>
+      <div class="kpi-note" id="attRate">30.7% registered-to-attended</div>
+    </div>
+    <div class="card">
+      <span class="kpi-icon" style="background:#e8f8ef;color:#16804c">↘</span>
+      <div class="kpi-title">Good-quality attendees</div>
+      <div class="kpi-num" id="quality">22</div>
+      <div class="kpi-note" id="qualityRate">31.0% of attendees</div>
+    </div>
+  </section>
+
+  <section class="layout">
+    <div class="card">
+      <div class="headrow">
+        <div>
+          <h2>Downstream funnel</h2>
+          <div class="desc">Current stage mapped for post-event attendees</div>
+        </div>
+        <span class="pill">POST EVENT DATA</span>
+      </div>
+      <div id="stages"></div>
+      <div class="footnote">
+        <span>Mapped: <b id="mapped">34</b></span>
+        <span>Unmapped: <b id="unmapped">37</b></span>
+        <span>Stage coverage: <b id="coverage">47.9%</b></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Registration by event</h2>
+      <div class="desc">Registered candidates · top events</div>
+      <div id="eventBars"></div>
+      <div class="highlight">
+        <b>↗ Highest registrations</b><br>
+        Automate Your Career with AI generated <b>108 registrations</b> in the demo snapshot.
+      </div>
+    </div>
+  </section>
+
+  <section class="card section">
+    <div class="headrow">
+      <div>
+        <h2>Event performance</h2>
+        <div class="desc">Track invitation, registration, attendance, and attendee quality by event</div>
+      </div>
+      <button class="btn" onclick="exportCSV()">↓ Download</button>
+    </div>
+
+    <div class="tools">
+      <input id="search" placeholder="Search events..." oninput="renderTable()">
+      <select id="eventFilter" onchange="renderTable()">
+        <option value="">All events</option>
+      </select>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Event date</th><th>Event name</th><th>Invited</th>
+            <th>Registered</th><th>Reg. rate</th><th>Attendees</th>
+            <th>Good quality</th><th>Attendance</th><th>Quality</th>
+          </tr>
+        </thead>
+        <tbody id="eventRows"></tbody>
+      </table>
+    </div>
+    <div class="footnote" style="border:0;padding-bottom:0">
+      Showing <span id="shown">9</span> events · Demo data
+    </div>
+  </section>
+
+  <section class="bottomgrid">
+    <div class="card">
+      <h2>Regional audience snapshot</h2>
+      <div class="desc">Regional counts shown in the demo snapshot</div>
+      <div id="regions"></div>
+      <div class="footnote" style="border:0">
+        Confirm the meaning of regional columns before interpreting these as lead or attendee totals.
+      </div>
+    </div>
+    <div class="card">
+      <h2>Data sources & sync</h2>
+      <div class="desc">Planned source connections for the live dashboard</div>
+      <div id="sources"></div>
+    </div>
+  </section>
+
+  <div class="footer">
+    <span>Tetr Event Intelligence · Internal analytics prototype</span>
+    <span>Live Google Sheets connection not configured</span>
+  </div>
+</div>
+</main>
+</div>
+
+<script>
+const dashboard = {
+  overview: {
+    invited:74758,
+    registered:231,
+    attendees:71,
+    goodQuality:22
+  },
+
+  events: [
+    {date:"29 Aug 2026",name:"How to Ace Your Global Master's Journey 1",invited:6272,registered:6,registrationRate:.10,attendees:2,goodQuality:2,attendanceRate:33.33,qualityRate:33.3},
+    {date:"06 Sep 2026",name:"Exploring the Tetr Master's Programs 1",invited:3642,registered:11,registrationRate:.30,attendees:7,goodQuality:3,attendanceRate:63.64,qualityRate:27.3},
+    {date:"09 Sep 2026",name:"How to Ace Your Global Master's Journey 2",invited:2635,registered:3,registrationRate:.11,attendees:3,goodQuality:2,attendanceRate:100,qualityRate:66.7},
+    {date:"09 Sep 2026",name:"Tetr Master's: Application Playbook",invited:4584,registered:4,registrationRate:.09,attendees:3,goodQuality:2,attendanceRate:75,qualityRate:50},
+    {date:"17 Sep 2026",name:"Maximising Your Master's ROI",invited:7283,registered:10,registrationRate:.14,attendees:3,goodQuality:1,attendanceRate:30,qualityRate:10},
+    {date:"23 Sep 2026",name:"Life as a Master's Student in Shanghai",invited:18706,registered:10,registrationRate:.05,attendees:1,goodQuality:0,attendanceRate:10,qualityRate:0},
+    {date:"29 Sep 2026",name:"How to Make Your First $100K As a Founder",invited:15697,registered:54,registrationRate:.34,attendees:21,goodQuality:5,attendanceRate:38.89,qualityRate:9.3},
+    {date:"04 Oct 2026",name:"A Day in the Life of a Master's Student in Shanghai",invited:7377,registered:25,registrationRate:.34,attendees:6,goodQuality:3,attendanceRate:24,qualityRate:12},
+    {date:"06 Oct 2026",name:"Automate Your Career with AI",invited:8562,registered:108,registrationRate:1.26,attendees:25,goodQuality:4,attendanceRate:23.15,qualityRate:3.7}
+  ],
+
+  stages: [
+    ["Registered",3,"#64748b"],
+    ["Application not submitted",13,"#8b5cf6"],
+    ["Application submitted",1,"#a78bfa"],
+    ["Trial completed",5,"#0ea5e9"],
+    ["Trial shortlisted",0,"#38bdf8"],
+    ["Interview booked",0,"#14b8a6"],
+    ["Interview completed",12,"#10b981"],
+    ["Offer letter sent",0,"#84cc16"],
+    ["Admits",0,"#22c55e"],
+    ["Unmapped / N/A",37,"#cbd5e1"]
+  ],
+
+  regions: [
+    ["Southeast Asia",353],
+    ["South Asia (excluding India)",2547]
+  ]
+};
+
+const n = x => Number(x || 0).toLocaleString("en-IN");
+const p = x => Number(x || 0).toFixed(2) + "%";
+
+function renderStages() {
+  const total = dashboard.stages.reduce((a,s) => a+s[1],0);
+  const unknown = dashboard.stages.find(s => s[0] === "Unmapped / N/A")[1];
+
+  document.getElementById("stages").innerHTML =
+    dashboard.stages.map(s => `
+      <div class="stage">
+        <div class="stage-name" title="${s[0]}">${s[0]}</div>
+        <div class="track">
+          <div class="bar" style="width:${total ? Math.max(s[1]/total*100,s[1]?1.5:0):0}%;background:${s[2]}"></div>
+        </div>
+        <div class="stage-count">${s[1]}</div>
+      </div>
+    `).join("");
+
+  document.getElementById("mapped").textContent = n(total-unknown);
+  document.getElementById("unmapped").textContent = n(unknown);
+  document.getElementById("coverage").textContent =
+    (total ? (total-unknown)/total*100 : 0).toFixed(1) + "%";
+}
+
+function renderBars() {
+  const top = [...dashboard.events]
+    .sort((a,b) => b.registered-a.registered)
+    .slice(0,5);
+
+  const max = Math.max(...dashboard.events.map(e => e.registered),1);
+
+  document.getElementById("eventBars").innerHTML = top.map(e => `
+    <div class="eventbar">
+      <div class="eventlabel">
+        <span title="${e.name}">${e.name}</span>
+        <b>${e.registered}</b>
+      </div>
+      <div class="track">
+        <div class="bar" style="width:${e.registered/max*100}%;background:#16804c"></div>
+      </div>
+    </div>
+  `).join("");
+}
+
+function renderTable() {
+  const q = document.getElementById("search").value.toLowerCase();
+  const f = document.getElementById("eventFilter").value;
+
+  const rows = dashboard.events.filter(e =>
+    (!f || e.name === f) &&
+    (e.name + " " + e.date).toLowerCase().includes(q)
+  );
+
+  document.getElementById("eventRows").innerHTML = rows.map(e => `
+    <tr>
+      <td>${e.date}</td>
+      <td class="name">${e.name}</td>
+      <td>${n(e.invited)}</td>
+      <td><b>${n(e.registered)}</b></td>
+      <td>${p(e.registrationRate)}</td>
+      <td>${e.attendees}</td>
+      <td>${e.goodQuality}</td>
+      <td>${p(e.attendanceRate)}</td>
+      <td>${p(e.qualityRate)}</td>
+    </tr>
+  `).join("");
+
+  document.getElementById("shown").textContent = rows.length;
+}
+
+function renderRegions() {
+  const max = Math.max(...dashboard.regions.map(x => x[1]),1);
+
+  document.getElementById("regions").innerHTML =
+    dashboard.regions.map(r => `
+      <div class="region">
+        <div class="region-label">
+          <span>${r[0]}</span><b>${n(r[1])}</b>
+        </div>
+        <div class="track">
+          <div class="bar" style="width:${r[1]/max*100}%;background:#1683c4"></div>
+        </div>
+      </div>
+    `).join("");
+}
+
+function renderSources() {
+  const sources = [
+    ["Google Sheets","Event and attendee records","Demo mode"],
+    ["Zoom","Attendance and participation","Via source sheet"],
+    ["Dinero","Event registration records","Via source sheet"],
+    ["LeadSquared","Current stage and funnel value","Via source sheet"]
+  ];
+
+  document.getElementById("sources").innerHTML = sources.map(s => `
+    <div class="source">
+      <div>
+        <div class="source-name">${s[0]}</div>
+        <div class="source-desc">${s[1]}</div>
+      </div>
+      <span class="source-status">${s[2]}</span>
+    </div>
+  `).join("");
+}
+
+function setNav(el) {
+  document.querySelectorAll(".nav").forEach(x => x.classList.remove("active"));
+  el.classList.add("active");
+}
+
+function refreshData() {
+  document.getElementById("statusText").textContent =
+    "Demo snapshot · refreshed " + new Date().toLocaleTimeString();
+
+  renderStages();
+  renderBars();
+  renderTable();
+}
+
+function exportCSV() {
+  const rows = [
+    ["Event date","Event name","Invited","Registered","Registration rate","Attendees","Good quality","Attendance rate","Quality rate"],
+    ...dashboard.events.map(e => [
+      e.date,e.name,e.invited,e.registered,e.registrationRate,
+      e.attendees,e.goodQuality,e.attendanceRate,e.qualityRate
+    ])
+  ];
+
+  const csv = rows.map(r =>
+    r.map(v => '"' + String(v).replaceAll('"','""') + '"').join(",")
+  ).join("\r\n");
+
+  const url = URL.createObjectURL(
+    new Blob([csv], {type:"text/csv;charset=utf-8;"})
+  );
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "tetr-event-performance.csv";
+  a.click();
+
+  setTimeout(() => URL.revokeObjectURL(url),1000);
+}
+
+function init() {
+  const o = dashboard.overview;
+
+  document.getElementById("invited").textContent = n(o.invited);
+  document.getElementById("registered").textContent = n(o.registered);
+  document.getElementById("attendees").textContent = n(o.attendees);
+  document.getElementById("quality").textContent = n(o.goodQuality);
+
+  document.getElementById("regRate").textContent =
+    (o.registered/o.invited*100).toFixed(2) + "% invite-to-registration";
+
+  document.getElementById("attRate").textContent =
+    (o.attendees/o.registered*100).toFixed(1) + "% registered-to-attended";
+
+  document.getElementById("qualityRate").textContent =
+    (o.goodQuality/o.attendees*100).toFixed(1) + "% of attendees";
+
+  const select = document.getElementById("eventFilter");
+
+  dashboard.events.forEach(e => {
+    const op = document.createElement("option");
+    op.value = e.name;
+    op.textContent = e.name;
+    select.appendChild(op);
+  });
+
+  renderStages();
+  renderBars();
+  renderTable();
+  renderRegions();
+  renderSources();
+}
+
+init();
+</script>
+</body>
+</html>
