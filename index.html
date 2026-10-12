@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -350,7 +351,7 @@ function renderAll() {
   renderSources();
 }
 
-/* UPDATED: Fixed downstream funnel display order */
+/* Fixed: Total Attendees now reads the actual API total */
 function renderStages() {
   const counts = dashboard.summary.currentStageCounts || {};
 
@@ -371,14 +372,11 @@ function renderStages() {
   const normalize = name =>
     String(name ?? '').trim().toLowerCase();
 
-  // Match API stage names to the requested display labels.
-  // This also supports common variations in capitalization.
   const aliases = {
-    'Total Attendees': ['Total Attendees', 'Total Attendee', 'Attended', 'Attendee Records'],
     'Registered': ['Registered', 'Registration Completed'],
     'App Not Submitted': ['App Not Submitted', 'Application Started', 'Application Not Submitted'],
     'App Submitted': ['App Submitted', 'Application Submitted'],
-    'Tetr Trial Completed': ['Tetr Trial Completed', 'Tetr Trial completed', 'TT Completed'],
+    'Tetr Trial Completed': ['Tetr Trial Completed', 'TT Completed'],
     'Tetr Trial Shortlisted': ['Tetr Trial Shortlisted', 'TT Shortlisted'],
     'Interview Booked': ['Interview Booked'],
     'Interview Completed': ['Interview Completed'],
@@ -390,45 +388,69 @@ function renderStages() {
   const normalizedKeys = Object.keys(counts);
 
   const entries = stageOrder.map(stage => {
+    if (stage === 'Total Attendees') {
+      return [stage, Number(
+        dashboard.summary.attendeeRecords ??
+        dashboard.summary.attendedRecords ??
+        dashboard.attendees.length ??
+        0
+      )];
+    }
+
     const candidates = aliases[stage] || [stage];
 
     const key = normalizedKeys.find(k =>
       candidates.some(alias => normalize(alias) === normalize(k))
     );
 
-    return [stage, key !== undefined ? Number(counts[key] || 0) : 0];
+    return [
+      stage,
+      key !== undefined ? Number(counts[key] || 0) : 0
+    ];
   });
 
-  // Use actual source totals for the footer, including any
-  // stages that are not displayed in the fixed-order chart.
-  const total = Object.values(counts).reduce(
+  // Use the attendee total as the bar denominator.
+  const totalAttendees = Number(
+    dashboard.summary.attendeeRecords ??
+    dashboard.summary.attendedRecords ??
+    dashboard.attendees.length ??
+    0
+  );
+
+  // Do not count the Total Attendees row as a funnel stage.
+  const stageTotal = Object.values(counts).reduce(
     (sum, count) => sum + Number(count || 0), 0
   );
 
   const unknown = Object.entries(counts)
-    .filter(([k]) =>
-      ['unknown', 'n/a', '#n/a', ''].includes(normalize(k))
+    .filter(([key]) =>
+      ['unknown', 'n/a', '#n/a', ''].includes(normalize(key))
     )
     .reduce((sum, [, count]) => sum + Number(count || 0), 0);
 
-  const mapped = total - unknown;
+  const mapped = Math.max(0, stageTotal - unknown);
 
   document.getElementById('stages').innerHTML = entries.map(
-    ([name, count], i) => `
-      <div class="stage">
-        <div class="stage-name" title="${esc(name)}">${esc(name)}</div>
-        <div class="track">
-          <div class="bar" style="width:${total ? Number(count)/total*100 : 0}%;background:${colors[i % colors.length]}"></div>
+    ([name, count], i) => {
+      const denominator = totalAttendees || 1;
+      const width = Math.min(100, count / denominator * 100);
+
+      return `
+        <div class="stage">
+          <div class="stage-name" title="${esc(name)}">${esc(name)}</div>
+          <div class="track">
+            <div class="bar" style="width:${width}%;background:${colors[i % colors.length]}"></div>
+          </div>
+          <div class="stage-count">${n(count)}</div>
         </div>
-        <div class="stage-count">${n(count)}</div>
-      </div>
-    `
+      `;
+    }
   ).join('');
 
   document.getElementById('mapped').textContent = n(mapped);
   document.getElementById('unmapped').textContent = n(unknown);
   document.getElementById('coverage').textContent =
-    pct(total ? mapped / total * 100 : 0);
+    pct(totalAttendees ? mapped / totalAttendees * 100 : 0);
 }
 
 function renderBars() {
