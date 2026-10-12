@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -279,7 +278,7 @@ const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({
 
 const colors = [
   '#64748b','#8b5cf6','#a78bfa','#0ea5e9','#38bdf8',
-  '#14b8a6','#10b981','#84cc16','#22c55e','#cbd5e1'
+  '#14b8a6','#10b981','#84cc16','#22c55e','#cbd5e1','#64748b'
 ];
 
 function setStatus(live, text) {
@@ -351,21 +350,71 @@ function renderAll() {
   renderSources();
 }
 
+/* UPDATED: Fixed downstream funnel display order */
 function renderStages() {
   const counts = dashboard.summary.currentStageCounts || {};
-  const entries = Object.entries(counts)
-    .sort((a,b) => Number(b[1]) - Number(a[1]));
 
-  const total = entries.reduce((a,x) => a + Number(x[1] || 0), 0);
+  const stageOrder = [
+    'Total Attendees',
+    'Registered',
+    'App Not Submitted',
+    'App Submitted',
+    'Tetr Trial Completed',
+    'Tetr Trial Shortlisted',
+    'Interview Booked',
+    'Interview Completed',
+    'Offer Letter Sent',
+    'Admits',
+    '#N/A'
+  ];
 
-  const unknown = entries
-    .filter(([k]) => ['Unknown','N/A','#N/A',''].includes(k))
-    .reduce((a,x) => a + Number(x[1] || 0), 0);
+  const normalize = name =>
+    String(name ?? '').trim().toLowerCase();
+
+  // Match API stage names to the requested display labels.
+  // This also supports common variations in capitalization.
+  const aliases = {
+    'Total Attendees': ['Total Attendees', 'Total Attendee', 'Attended', 'Attendee Records'],
+    'Registered': ['Registered', 'Registration Completed'],
+    'App Not Submitted': ['App Not Submitted', 'Application Started', 'Application Not Submitted'],
+    'App Submitted': ['App Submitted', 'Application Submitted'],
+    'Tetr Trial Completed': ['Tetr Trial Completed', 'Tetr Trial completed', 'TT Completed'],
+    'Tetr Trial Shortlisted': ['Tetr Trial Shortlisted', 'TT Shortlisted'],
+    'Interview Booked': ['Interview Booked'],
+    'Interview Completed': ['Interview Completed'],
+    'Offer Letter Sent': ['Offer Letter Sent', 'Offers Sent', 'Offer Sent'],
+    'Admits': ['Admits', 'Admitted', 'Admissions'],
+    '#N/A': ['#N/A', 'N/A', 'Unknown', '']
+  };
+
+  const normalizedKeys = Object.keys(counts);
+
+  const entries = stageOrder.map(stage => {
+    const candidates = aliases[stage] || [stage];
+
+    const key = normalizedKeys.find(k =>
+      candidates.some(alias => normalize(alias) === normalize(k))
+    );
+
+    return [stage, key !== undefined ? Number(counts[key] || 0) : 0];
+  });
+
+  // Use actual source totals for the footer, including any
+  // stages that are not displayed in the fixed-order chart.
+  const total = Object.values(counts).reduce(
+    (sum, count) => sum + Number(count || 0), 0
+  );
+
+  const unknown = Object.entries(counts)
+    .filter(([k]) =>
+      ['unknown', 'n/a', '#n/a', ''].includes(normalize(k))
+    )
+    .reduce((sum, [, count]) => sum + Number(count || 0), 0);
 
   const mapped = total - unknown;
 
-  document.getElementById('stages').innerHTML = entries.length
-    ? entries.map(([name,count],i) => `
+  document.getElementById('stages').innerHTML = entries.map(
+    ([name, count], i) => `
       <div class="stage">
         <div class="stage-name" title="${esc(name)}">${esc(name)}</div>
         <div class="track">
@@ -373,8 +422,8 @@ function renderStages() {
         </div>
         <div class="stage-count">${n(count)}</div>
       </div>
-    `).join('')
-    : '<p>No stage data found.</p>';
+    `
+  ).join('');
 
   document.getElementById('mapped').textContent = n(mapped);
   document.getElementById('unmapped').textContent = n(unknown);
